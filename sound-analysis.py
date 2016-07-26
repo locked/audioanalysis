@@ -25,7 +25,16 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 22050
 
+p = pyaudio.PyAudio()
+MAX_y = 2.0 ** (p.get_sample_size(FORMAT) * 8 - 1)
+MAX_y /= 30.0
+
+last_beep = time.time()
+
+
 def callback(data, frame_count, time_info, status):
+    global last_beep
+
     N = max(frame_count / nFFT, 1) * nFFT
 
     # Unpack data, LRLRLR...
@@ -43,22 +52,20 @@ def callback(data, frame_count, time_info, status):
     y2_sum = 0
     for k, y in enumerate(Y):
         if k >= 315 and k <= 325:
-            print str(k) + ":" + str(round(y)),
+            #print str(k) + ":" + str(round(y)),
             y_sum += y
         else:
             y2_sum += y
-    print
-    print y_sum/10.0, y2_sum/490.0
+    #print
+    #print y_sum/10.0, y2_sum/490.0
+    if y_sum/10.0 > 3 and y2_sum/490.0 < 1:
+        #print "Beep detected", y_sum/10.0, y2_sum/490.0
+        last_beep = time.time()
 
     out_data = None
     return (out_data, pyaudio.paContinue)
 
-p = pyaudio.PyAudio()
-MAX_y = 2.0 ** (p.get_sample_size(FORMAT) * 8 - 1)
-MAX_y /= 30.0
-
 def main():
-
   stream = p.open(format=FORMAT,
                   channels=CHANNELS,
                   rate=RATE,
@@ -70,6 +77,10 @@ def main():
 
   while stream.is_active():
     time.sleep(0.1)
+    time_since_last_beep = time.time() - last_beep
+    if time_since_last_beep > 5:
+       print "Timeout. Time since last beep:" + str(time_since_last_beep)
+
 
   stream.stop_stream()
   stream.close()
