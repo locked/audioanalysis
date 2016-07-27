@@ -59,7 +59,7 @@ def callback(data, frame_count, time_info, status):
     #print
     #print y_sum/10.0, y2_sum/490.0
     if y_sum/10.0 > 3 and y2_sum/490.0 < 1:
-        #print "Beep detected", y_sum/10.0, y2_sum/490.0
+        print "Beep detected", y_sum/10.0, y2_sum/490.0
         last_beep = time.time()
 
     out_data = None
