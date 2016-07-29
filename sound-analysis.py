@@ -5,6 +5,7 @@
 # Deps: PyAudio, NumPy, and Matplotlib
 # Blog: http://blog.yjl.im/2012/11/frequency-spectrum-of-sound-using.html
 
+import os
 import struct
 import wave
 import time
@@ -13,11 +14,6 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import pyaudio
-
-TITLE = ''
-WIDTH = 1024
-HEIGHT = 720
-FPS = 25.0
 
 nFFT = 512
 BUF_SIZE = 4 * nFFT
@@ -48,18 +44,36 @@ def callback(data, frame_count, time_info, status):
     # Sewing FFT of two channels together, DC part uses right channel's
     Y = abs(np.hstack((Y_L[-nFFT / 2:-1], Y_R[:nFFT / 2])))
 
+    # 190 191 [192] 193  +  318 [319] 320 321
+    freqs = [189, 190, 191, 192, 193, 194, 195, 316, 317, 318, 319, 320, 321, 322]
+    ignore = [254, 255, 256, 257]
     y_sum = 0
     y2_sum = 0
     for k, y in enumerate(Y):
-        if k >= 315 and k <= 325:
-            #print str(k) + ":" + str(round(y)),
+        if y > 20 and k not in freqs: print str(k) + ":" + str(round(y)),
+        if k in ignore:
+            continue
+        if k in freqs:
             y_sum += y
         else:
             y2_sum += y
-    #print
+    y_avg, y2_avg = y_sum/len(freqs), y2_sum/(500-len(freqs))
+    """
+    print y_sum/len(freqs), y2_sum/(500-len(freqs))
+    y_sum = 0
+    y2_sum = 0
+    for k, y in enumerate(Y):
+        if y > 30: print str(k),
+        #if k >= 310 and k <= 330:
+        #    #print str(k) + ":" + str(round(y)),
+            y_sum += y
+        else:
+            y2_sum += y
+    print
     #print y_sum/10.0, y2_sum/490.0
-    if y_sum/10.0 > 3 and y2_sum/490.0 < 1:
-        print "Beep detected", y_sum/10.0, y2_sum/490.0
+    """
+    if y_avg > 20 and y2_avg < 2:
+        print "Beep detected", y_avg, y2_avg
         last_beep = time.time()
 
     out_data = None
@@ -80,6 +94,10 @@ def main():
     time_since_last_beep = time.time() - last_beep
     if time_since_last_beep > 5:
        print "Timeout. Time since last beep:" + str(time_since_last_beep)
+       cmd = "ssh -XC eadam 'touch /tmp/lock' 2>/dev/null"
+    else:
+       cmd = "ssh -XC eadam 'rm /tmp/lock' 2>/dev/null"
+    os.system(cmd)
 
 
   stream.stop_stream()
