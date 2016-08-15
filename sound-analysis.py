@@ -2,16 +2,15 @@
 # Written by Yu-Jie Lin
 # Public Domain
 #
-# Deps: PyAudio, NumPy, and Matplotlib
+# Deps: PyAudio, NumPy
 # Blog: http://blog.yjl.im/2012/11/frequency-spectrum-of-sound-using.html
 
 import os
+import sys
 import struct
 import wave
 import time
 
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 import numpy as np
 import pyaudio
 
@@ -19,9 +18,10 @@ nFFT = 512
 BUF_SIZE = 4 * nFFT
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 22050
+RATE = 44100 #22050
 
 p = pyaudio.PyAudio()
+
 MAX_y = 2.0 ** (p.get_sample_size(FORMAT) * 8 - 1)
 MAX_y /= 30.0
 
@@ -80,12 +80,34 @@ def callback(data, frame_count, time_info, status):
     return (out_data, pyaudio.paContinue)
 
 def main():
+  info = p.get_host_api_info_by_index(0)
+  numdevices = info.get('deviceCount')
+  input_device_index = None
+  for i in range (0, numdevices):
+    device_info = p.get_device_info_by_host_api_device_index(0, i)
+    if device_info.get('maxInputChannels')>0:
+      print "Input Device id ", i, " - ", device_info.get('name')
+      input_device_index = i
+  if input_device_index is None:
+    print "Could not find suitable input device"
+    sys.exit(1)
+  devinfo = p.get_device_info_by_index(input_device_index)
+  print "Selected device is ",devinfo.get('name')
+  #if p.is_format_supported(44100.0,  # Sample rate
+  #                       input_device=devinfo["index"],
+  #                       input_channels=devinfo['maxInputChannels'],
+  #                       input_format=pyaudio.paInt16):
+  #  print 'Yay!'
+  #p.terminate()
+  #sys.exit()
+
   stream = p.open(format=FORMAT,
                   channels=CHANNELS,
                   rate=RATE,
                   input=True,
                   frames_per_buffer=BUF_SIZE,
-                  stream_callback=callback)
+                  stream_callback=callback,
+                  input_device_index=input_device_index)
 
   stream.start_stream()
 

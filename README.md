@@ -1,4 +1,10 @@
 
+== pyaudio ==
+
+ You may need to upgrade it:
+
+ apt-get install portaudio19-dev python-dev && pip install --upgrade pyaudio
+
 == Credits ==
 
  - http://blog.yjl.im/2012/11/frequency-spectrum-of-sound-using.html
